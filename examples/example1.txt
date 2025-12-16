@@ -1,0 +1,11 @@
+switch (I) {
+    case 1:
+        print("Привет");
+        print("Мир");
+        break;
+    case 2:
+        print("Второй case");
+        break;
+    default:
+        print("По умолчанию");
+}

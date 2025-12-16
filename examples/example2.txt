@@ -1,0 +1,14 @@
+switch (I) {
+    case 0:
+        print("Ноль");
+        break;
+    case 1:
+        print("Один");
+        break;
+    case 2:
+        print("Два");
+        break;
+    default:
+        print("Другое значение");
+        print("Конец");
+}
