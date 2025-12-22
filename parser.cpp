@@ -123,9 +123,9 @@ unique_ptr<SwitchNode> Parser::parseOperator() {
     return switchNode;
 }
 
-vector<unique_ptr<ASTNode>> Parser::parseCaseList() {
-    // <СписокКейсов> ::= <СписокКейсов> <Кейс> | <Кейс>
-    vector<unique_ptr<ASTNode>> cases;
+///=============
+vector<unique_ptr<CaseNode>> Parser::parseCaseList() {
+    vector<unique_ptr<CaseNode>> cases;
     
     while (check(TokenType::CASE)) {
         cases.push_back(parseCase());
@@ -133,6 +133,8 @@ vector<unique_ptr<ASTNode>> Parser::parseCaseList() {
     
     return cases;
 }
+}
+///=============
 
 unique_ptr<CaseNode> Parser::parseCase() {
     // <Кейс> ::= CASE I : <СписокДействий> BREAK ;
@@ -151,7 +153,7 @@ unique_ptr<CaseNode> Parser::parseCase() {
     
     return caseNode;
 }
-///=============
+
 unique_ptr<DefaultNode> Parser::parseDefault() {
     if (!check(TokenType::DEFAULT)) {
         return nullptr;  // ← НЕТ default — возвращаем nullptr
@@ -163,7 +165,7 @@ unique_ptr<DefaultNode> Parser::parseDefault() {
     defaultNode->actions = parseActionList();
     return defaultNode;
 }
-///=============
+
 vector<unique_ptr<ASTNode>> Parser::parseActionList() {
     // <СписокДействий> ::= <СписокДействий> <Действие> | <Действие>
     vector<unique_ptr<ASTNode>> actions;
