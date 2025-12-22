@@ -5,21 +5,34 @@
 #include <vector>
 #include "scanner.h"
 
+enum class ErrorType {
+    LEXICAL,
+    SYNTAX,
+    SEMANTIC
+};
+
 struct Error {
+    ErrorType type;
     std::string message;
     int line;
     int column;
     
-    Error(const std::string& msg, int ln, int col)
-        : message(msg), line(ln), column(col) {}
+    Error(ErrorType t, const std::string& msg, int ln, int col)
+        : type(t), message(msg), line(ln), column(col) {}
 };
 
 class ErrorHandler {
 public:
     static ErrorHandler& getInstance();
     
-    void addError(const std::string& message, int line, int column);
-    void addError(const Token& token, const std::string& message);
+    void addLexicalError(const std::string& message, int line, int column);
+    void addSyntaxError(const std::string& message, int line, int column);
+    void addSemanticError(const std::string& message, int line, int column);
+    
+    void addLexicalError(const Token& token, const std::string& message);
+    void addSyntaxError(const Token& token, const std::string& message);
+    void addSemanticError(const Token& token, const std::string& message);
+    
     bool hasErrors() const;
     void printErrors() const;
     void clear();

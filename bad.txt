@@ -1,0 +1,1 @@
+SWITCH (I) { CASE 8 : print("Недопустимо"); BREAK ; }
