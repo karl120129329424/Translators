@@ -22,7 +22,7 @@ void SemanticAnalyzer::analyze(unique_ptr<ASTNode>& ast) {
 void SemanticAnalyzer::analyzeSwitchNode(SwitchNode* node) {
     // Проверяем переменную
     if (!validateVariable(node->variable)) {
-        ErrorHandler::getInstance().addError(node->variable,
+        ErrorHandler::getInstance().addSemanticError(node->variable,
             "В операторе switch может использоваться только переменная 'I'");
     }
     
@@ -36,7 +36,7 @@ void SemanticAnalyzer::analyzeSwitchNode(SwitchNode* node) {
             // Проверяем уникальность значений case
             int value = stoi(caseNode->value.lexeme);
             if (find(caseValues.begin(), caseValues.end(), value) != caseValues.end()) {
-                ErrorHandler::getInstance().addError(caseNode->value,
+                ErrorHandler::getInstance().addSemanticError(caseNode->value,
                     "Повторяющееся значение case: " + caseNode->value.lexeme);
             }
             caseValues.push_back(value);
@@ -71,7 +71,7 @@ void SemanticAnalyzer::analyzeSwitchNode(SwitchNode* node) {
 void SemanticAnalyzer::analyzeCaseNode(CaseNode* node) {
     // Проверяем значение case
     if (!validateCaseValue(node->value)) {
-        ErrorHandler::getInstance().addError(node->value,
+        ErrorHandler::getInstance().addSemanticError(node->value,
             "Недопустимое значение case: " + node->value.lexeme);
     }
     
@@ -85,7 +85,7 @@ void SemanticAnalyzer::analyzeCaseNode(CaseNode* node) {
     
     // Проверяем, что есть хотя бы одно действие
     if (node->actions.empty()) {
-        ErrorHandler::getInstance().addError(node->value,
+        ErrorHandler::getInstance().addSemanticError(node->value,
             "Case должен содержать хотя бы одно действие");
     }
 }
@@ -101,7 +101,9 @@ void SemanticAnalyzer::analyzeDefaultNode(DefaultNode* node) {
     
     // Проверяем, что есть хотя бы одно действие
     if (node->actions.empty()) {
-        ErrorHandler::getInstance().addError(Token(), 
+        // Используем позицию из default, если возможно — иначе (0,0)
+        Token defaultToken(TokenType::DEFAULT, "default", 0, 0);
+        ErrorHandler::getInstance().addSemanticError(defaultToken, 
             "Default должен содержать хотя бы одно действие");
     }
 }
@@ -109,7 +111,7 @@ void SemanticAnalyzer::analyzeDefaultNode(DefaultNode* node) {
 void SemanticAnalyzer::analyzePrintNode(PrintNode* node) {
     // Проверяем, что строка не пустая
     if (node->text.lexeme.empty()) {
-        ErrorHandler::getInstance().addError(node->text,
+        ErrorHandler::getInstance().addSemanticError(node->text,
             "Строка в print() не может быть пустой");
     }
 }
@@ -140,7 +142,7 @@ void SemanticAnalyzer::execute(unique_ptr<ASTNode>& ast, int switchValue) {
         executeSwitchNode(switchNode, switchValue);
     }
 }
-///----
+
 void SemanticAnalyzer::executeSwitchNode(SwitchNode* node, int switchValue) {
     cout << "\n=== ВЫПОЛНЕНИЕ SWITCH ===" << endl;
     cout << "Значение переменной I = " << switchValue << endl;
@@ -155,7 +157,7 @@ void SemanticAnalyzer::executeSwitchNode(SwitchNode* node, int switchValue) {
             try {
                 caseValue = stoi(caseNode->value.lexeme);
             } catch (...) {
-                ErrorHandler::getInstance().addError(caseNode->value, 
+                ErrorHandler::getInstance().addSemanticError(caseNode->value, 
                     "Некорректное число в case: " + caseNode->value.lexeme);
                 return;
             }
@@ -184,7 +186,7 @@ void SemanticAnalyzer::executeSwitchNode(SwitchNode* node, int switchValue) {
         cout << "→ Не найдено подходящего CASE и отсутствует DEFAULT — ничего не выполнено.\n";
     }
 }
-///----
+
 void SemanticAnalyzer::executeCaseNode(CaseNode* node, int caseValue) {
     cout << "Выполняется case " << caseValue << ":" << endl;
     for (auto& action : node->actions) {
