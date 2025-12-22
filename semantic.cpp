@@ -119,7 +119,7 @@ bool SemanticAnalyzer::validateCaseValue(const Token& token) {
     
     try {
         int value = stoi(token.lexeme);
-        return value >= 0; // Можно добавить дополнительные ограничения
+        return (value >= 0 && value <= 7);  // только 0..7
     } catch (...) {
         return false;
     }
@@ -140,7 +140,7 @@ void SemanticAnalyzer::execute(unique_ptr<ASTNode>& ast, int switchValue) {
         executeSwitchNode(switchNode, switchValue);
     }
 }
-
+///----
 void SemanticAnalyzer::executeSwitchNode(SwitchNode* node, int switchValue) {
     cout << "\n=== ВЫПОЛНЕНИЕ SWITCH ===" << endl;
     cout << "Значение переменной I = " << switchValue << endl;
@@ -151,7 +151,15 @@ void SemanticAnalyzer::executeSwitchNode(SwitchNode* node, int switchValue) {
     for (auto& caseNodePtr : node->cases) {
         CaseNode* caseNode = dynamic_cast<CaseNode*>(caseNodePtr.get());
         if (caseNode) {
-            int caseValue = stoi(caseNode->value.lexeme);
+            int caseValue;
+            try {
+                caseValue = stoi(caseNode->value.lexeme);
+            } catch (...) {
+                ErrorHandler::getInstance().addError(caseNode->value, 
+                    "Некорректное число в case: " + caseNode->value.lexeme);
+                return;
+            }
+
             if (caseValue == switchValue) {
                 caseFound = true;
                 executeCaseNode(caseNode, caseValue);
@@ -164,7 +172,7 @@ void SemanticAnalyzer::executeSwitchNode(SwitchNode* node, int switchValue) {
     if (!caseFound && node->defaultCase) {
         DefaultNode* defaultNode = dynamic_cast<DefaultNode*>(node->defaultCase.get());
         if (defaultNode) {
-            cout << "Выполняется default:" << endl;
+            cout << "→ Выполняется ветка DEFAULT\n";
             for (auto& action : defaultNode->actions) {
                 PrintNode* printNode = dynamic_cast<PrintNode*>(action.get());
                 if (printNode) {
@@ -173,10 +181,10 @@ void SemanticAnalyzer::executeSwitchNode(SwitchNode* node, int switchValue) {
             }
         }
     } else if (!caseFound) {
-        cout << "Не найден подходящий case и отсутствует default\n";
+        cout << "→ Не найдено подходящего CASE и отсутствует DEFAULT — ничего не выполнено.\n";
     }
 }
-
+///----
 void SemanticAnalyzer::executeCaseNode(CaseNode* node, int caseValue) {
     cout << "Выполняется case " << caseValue << ":" << endl;
     for (auto& action : node->actions) {
