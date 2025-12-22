@@ -104,7 +104,7 @@ unique_ptr<SwitchNode> Parser::parseOperator() {
     
     Token varToken = consume(TokenType::IDENTIFIER, "Ожидается переменная 'I'");
     if (varToken.lexeme != "I") {
-        ErrorHandler::getInstance().addError(varToken, 
+        ErrorHandler::getInstance().addSyntaxError(varToken, 
             "Ожидается переменная 'I', получено: " + varToken.lexeme);
     }
     switchNode->variable = varToken;
@@ -123,7 +123,6 @@ unique_ptr<SwitchNode> Parser::parseOperator() {
     return switchNode;
 }
 
-///=============
 vector<unique_ptr<CaseNode>> Parser::parseCaseList() {
     vector<unique_ptr<CaseNode>> cases;
     
@@ -133,7 +132,6 @@ vector<unique_ptr<CaseNode>> Parser::parseCaseList() {
     
     return cases;
 }
-///=============
 
 unique_ptr<CaseNode> Parser::parseCase() {
     // <Кейс> ::= CASE I : <СписокДействий> BREAK ;
@@ -155,7 +153,7 @@ unique_ptr<CaseNode> Parser::parseCase() {
 
 unique_ptr<DefaultNode> Parser::parseDefault() {
     if (!check(TokenType::DEFAULT)) {
-        return nullptr;  // ← НЕТ default — возвращаем nullptr
+        return nullptr;  // ← DEFAULT не обязателен
     }
 
     auto defaultNode = make_unique<DefaultNode>();
