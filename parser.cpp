@@ -133,7 +133,6 @@ vector<unique_ptr<CaseNode>> Parser::parseCaseList() {
     
     return cases;
 }
-}
 ///=============
 
 unique_ptr<CaseNode> Parser::parseCase() {
