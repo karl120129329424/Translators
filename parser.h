@@ -6,6 +6,13 @@
 #include <memory>
 #include <string>
 
+// Forward declarations — говорим компилятору: "такие классы будут"
+struct ASTNode;
+struct SwitchNode;
+struct CaseNode;
+struct DefaultNode;
+struct PrintNode;
+
 // Абстрактный узел AST
 struct ASTNode {
     virtual ~ASTNode() = default;
@@ -15,8 +22,8 @@ struct ASTNode {
 // Узел для оператора switch
 struct SwitchNode : public ASTNode {
     Token variable;
-    std::vector<std::unique_ptr<CaseNode>> cases;        // ← исправлено: CaseNode вместо ASTNode
-    std::unique_ptr<DefaultNode> defaultCase;            // ← исправлено: DefaultNode вместо ASTNode
+    std::vector<std::unique_ptr<CaseNode>> cases;        // ← точный тип
+    std::unique_ptr<DefaultNode> defaultCase;            // ← точный тип
     
     void print(int indent = 0) const override;
 };
@@ -46,9 +53,8 @@ struct PrintNode : public ASTNode {
 class Parser {
 public:
     Parser(Scanner& scanner);
-    
     std::unique_ptr<ASTNode> parse();
-    
+
 private:
     Scanner& scanner;
     Token currentToken;
@@ -59,21 +65,9 @@ private:
     bool check(TokenType type) const;
     Token consume(TokenType type, const std::string& errorMessage);
     
-    // Функции разбора для каждого нетерминала
-    /*
-    Грамматика (вариант 18):
-    <Программа> ::= <Оператор>
-    <Оператор> ::= SWITCH (I) {<СписокКейсов> <ПоУмолчанию>}
-    <СписокКейсов> ::= <СписокКейсов> <Кейс> | <Кейс>
-    <Кейс> ::= CASE I : <СписокДействий> BREAK ;
-    <ПоУмолчанию> ::= DEFAULT : <СписокДействий>
-    <СписокДействий> ::= <СписокДействий> <Действие> | <Действие>
-    <Действие> ::= print ( "Текст" ) ;
-    */
-    
     std::unique_ptr<ASTNode> parseProgram();
     std::unique_ptr<SwitchNode> parseOperator();
-    std::vector<std::unique_ptr<ASTNode>> parseCaseList();
+    std::vector<std::unique_ptr<CaseNode>> parseCaseList();  // ← точный тип возвращаемого значения
     std::unique_ptr<CaseNode> parseCase();
     std::unique_ptr<DefaultNode> parseDefault();
     std::vector<std::unique_ptr<ASTNode>> parseActionList();
