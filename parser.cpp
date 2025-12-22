@@ -63,7 +63,7 @@ Token Parser::consume(TokenType type, const string& errorMessage) {
         return token;
     }
     
-    ErrorHandler::getInstance().addError(currentToken, errorMessage);
+    ErrorHandler::getInstance().addSyntaxError(currentToken, errorMessage);
     synchronize();
     return Token(type, "", currentToken.line, currentToken.column);
 }
