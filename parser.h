@@ -15,8 +15,8 @@ struct ASTNode {
 // Узел для оператора switch
 struct SwitchNode : public ASTNode {
     Token variable;
-    std::vector<std::unique_ptr<ASTNode>> cases;
-    std::unique_ptr<ASTNode> defaultCase;
+    std::vector<std::unique_ptr<CaseNode>> cases;        // ← исправлено: CaseNode вместо ASTNode
+    std::unique_ptr<DefaultNode> defaultCase;            // ← исправлено: DefaultNode вместо ASTNode
     
     void print(int indent = 0) const override;
 };
