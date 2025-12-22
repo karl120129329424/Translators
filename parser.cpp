@@ -151,20 +151,19 @@ unique_ptr<CaseNode> Parser::parseCase() {
     
     return caseNode;
 }
-
+///=============
 unique_ptr<DefaultNode> Parser::parseDefault() {
-    // <ПоУмолчанию> ::= DEFAULT : <СписокДействий>
+    if (!check(TokenType::DEFAULT)) {
+        return nullptr;  // ← НЕТ default — возвращаем nullptr
+    }
+
     auto defaultNode = make_unique<DefaultNode>();
-    
     consume(TokenType::DEFAULT, "Ожидается ключевое слово 'default'");
     consume(TokenType::COLON, "Ожидается ':' после 'default'");
-    
-    // Парсим список действий
     defaultNode->actions = parseActionList();
-    
     return defaultNode;
 }
-
+///=============
 vector<unique_ptr<ASTNode>> Parser::parseActionList() {
     // <СписокДействий> ::= <СписокДействий> <Действие> | <Действие>
     vector<unique_ptr<ASTNode>> actions;
