@@ -45,13 +45,13 @@ void runInteractiveMode(int verbose, bool autoMode) {
         return;
     }
 
-    // Генерация I (один раз за сессию)
+    // Генерация I
     static bool first = true;
     if (first) {
         srand(static_cast<unsigned>(time(nullptr)));
         first = false;
     }
-    int switchValue = rand() % 8;  // 0..7
+    int switchValue = rand() % 8;
 
     cout << "\n[!] Сгенерировано I = " << switchValue << "\n";
 
@@ -77,17 +77,27 @@ void runInteractiveMode(int verbose, bool autoMode) {
 
     cout << "✓ Семантический анализ успешен\n";
 
-    // Вывод AST и таблицы при verbose >= 2
     if (verbose >= 2) {
         cout << "\n=== АБСТРАКТНОЕ СИНТАКСИЧЕСКОЕ ДЕРЕВО ===\n";
         ast->print();
     }
 
-    // Выполнение
+    // Вывод результата
     cout << "\n=== РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ ===\n";
+
+    if (!autoMode) {
+        cout << "Подтвердите выполнение? [y/N]: ";
+        char confirm;
+        cin >> confirm;
+        if (confirm != 'y' && confirm != 'Y') {
+            cout << "Выполнение отменено.\n";
+            return;
+        }
+    }
+
     semantic.execute(ast, switchValue);
 }
-
+///============================
 void processFile(const string& filename, int verbose, bool autoMode) {
     ifstream file(filename);
     if (!file.is_open()) {
@@ -95,13 +105,13 @@ void processFile(const string& filename, int verbose, bool autoMode) {
         return;
     }
 
-    // Генерация I (один раз за запуск)
+    // Генерация I
     static bool first = true;
     if (first) {
         srand(static_cast<unsigned>(time(nullptr)));
         first = false;
     }
-    int switchValue = rand() % 8;  // 0..7
+    int switchValue = rand() % 8;
 
     if (verbose >= 1) {
         cout << "[ℹ] I = " << switchValue << endl;
@@ -138,13 +148,24 @@ void processFile(const string& filename, int verbose, bool autoMode) {
         ast->print();
     }
 
-    // Выполнение
+    // Вывод результата
     if (verbose >= 1) {
         cout << "\n=== РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ ===\n";
     }
+
+    if (!autoMode) {
+        cout << "Подтвердите выполнение? [y/N]: ";
+        char confirm;
+        cin >> confirm;
+        if (confirm != 'y' && confirm != 'Y') {
+            cout << "Выполнение отменено.\n";
+            return;
+        }
+    }
+
     semantic.execute(ast, switchValue);
 }
-
+///============================
 int main(int argc, char* argv[]) {
     string filename;
     int verbose = 0;      // -v 0 — по умолчанию
