@@ -2,6 +2,8 @@
 #include <fstream>
 #include <string>
 #include <memory>
+#include <cstdlib>  // для srand, rand
+#include <ctime>    // для time
 #include "scanner.h"
 #include "parser.h"
 #include "semantic.h"
@@ -11,210 +13,191 @@ using namespace std;
 
 void printHelp() {
     cout << "Использование:\n";
-    cout << "  switch_translator [опции] [файл]\n\n";
+    cout << "  ./switch_translator [опции] [файл]\n\n";
     cout << "Опции:\n";
     cout << "  -h, --help       Показать эту справку\n";
-    cout << "  -i, --interactive Интерактивный режим\n";
-    cout << "  -v, --value N    Установить значение переменной I (по умолчанию: 1)\n";
-    cout << "  -a, --ast        Показать AST\n";
-    cout << "  -s, --symbols    Показать таблицу символов\n";
+    cout << "  -i, --interactive Запустить интерактивный режим\n";
+    cout << "  -v N, --verbose N Уровень детализации:\n";
+    cout << "                     N=0 — только результат (по умолчанию)\n";
+    cout << "                     N=1 — + список токенов после сканирования\n";
+    cout << "                     N=2 — + AST и таблица символов (если доступно)\n";
+    cout << "  -a, --auto       Автоматический режим: генерировать код без подтверждения\n";
+    cout << "\nПримеры:\n";
+    cout << "  ./switch_translator examples/example1.txt\n";
+    cout << "  ./switch_translator -a -v 2 examples/example1.txt\n";
+    cout << "  ./switch_translator -i\n";
 }
 
-void runInteractiveMode() {
-    cout << "=== ИНТЕРАКТИВНЫЙ РЕЖИМ ===" << endl;
-    cout << "Введите оператор switch (Ctrl+D для завершения):\n\n";
-    
+void runInteractiveMode(int verbose, bool autoMode) {
+    cout << "=== ИНТЕРАКТИВНЫЙ РЕЖИМ ===\n";
+    cout << "Введите программу на языке switch-lang (окончание — пустая строка или Ctrl+D):\n\n";
+
     string input;
     string line;
-    
-    while (true) {
-        cout << "> ";
-        if (!getline(cin, line)) {
-            break;
-        }
-        
-        if (line == "exit" || line == "quit") {
-            break;
-        }
-        
-        input += line + "\n";
-        
-        // Проверяем, завершен ли оператор switch
-        if (line.find('}') != string::npos) {
-            // Очищаем предыдущие ошибки
-            ErrorHandler::getInstance().clear();
-            
-            Scanner scanner(input);
-            Parser parser(scanner);
-            
-            auto ast = parser.parse();
-            
-            if (ErrorHandler::getInstance().hasErrors()) {
-                ErrorHandler::getInstance().printErrors();
-            } else {
-                cout << "\n✓ Синтаксический анализ успешен\n";
-                
-                SemanticAnalyzer semantic;
-                semantic.analyze(ast);
-                
-                if (ErrorHandler::getInstance().hasErrors()) {
-                    ErrorHandler::getInstance().printErrors();
-                } else {
-                    cout << "✓ Семантический анализ успешен\n";
-                    
-                    // Запрашиваем значение для выполнения
-                    int switchValue;
-                    cout << "\nВведите значение переменной I: ";
-                    if (cin >> switchValue) {
-                        cin.ignore(); // Очищаем буфер
-                        semantic.execute(ast, switchValue);
-                    } else {
-                        cout << "Некорректное значение\n";
-                        cin.clear();
-                        cin.ignore(10000, '\n');
-                    }
-                }
-            }
-            
-            input.clear();
-            cout << endl;
-        }
-    }
-}
 
-void processFile(const string& filename, int switchValue, bool showAST, bool showSymbols) {
-    ifstream file(filename);
-    if (!file.is_open()) {
-        cerr << "Ошибка: не удалось открыть файл " << filename << endl;
+    while (getline(cin, line)) {
+        if (line.empty()) break;
+        input += line + "\n";
+    }
+
+    if (input.empty()) {
+        cout << "Ввод отсутствует. Завершение.\n";
         return;
     }
-    
-    cout << "=== ОБРАБОТКА ФАЙЛА: " << filename << " ===" << endl;
-    
-    Scanner scanner(file);
+
+    // Генерация I (один раз за сессию)
+    static bool first = true;
+    if (first) {
+        srand(static_cast<unsigned>(time(nullptr)));
+        first = false;
+    }
+    int switchValue = rand() % 8;  // 0..7
+
+    cout << "\n[!] Сгенерировано I = " << switchValue << "\n";
+
+    ErrorHandler::getInstance().clear();
+    Scanner scanner(input);
     Parser parser(scanner);
-    
     auto ast = parser.parse();
-    
+
     if (ErrorHandler::getInstance().hasErrors()) {
         ErrorHandler::getInstance().printErrors();
         return;
     }
-    
+
     cout << "✓ Синтаксический анализ успешен\n";
-    
+
     SemanticAnalyzer semantic;
     semantic.analyze(ast);
-    
+
     if (ErrorHandler::getInstance().hasErrors()) {
         ErrorHandler::getInstance().printErrors();
         return;
     }
-    
+
     cout << "✓ Семантический анализ успешен\n";
-    
-    if (showAST) {
-        cout << "\n=== АБСТРАКТНОЕ СИНТАКСИЧЕСКОЕ ДЕРЕВО ===" << endl;
+
+    // Вывод AST и таблицы при verbose >= 2
+    if (verbose >= 2) {
+        cout << "\n=== АБСТРАКТНОЕ СИНТАКСИЧЕСКОЕ ДЕРЕВО ===\n";
         ast->print();
     }
-    
-    if (showSymbols) {
-        semantic.printSymbolTable();
+
+    // Выполнение
+    cout << "\n=== РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ ===\n";
+    semantic.execute(ast, switchValue);
+}
+
+void processFile(const string& filename, int verbose, bool autoMode) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "[Ошибка] Не удалось открыть файл: " << filename << endl;
+        return;
     }
-    
-    cout << "\n=== РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ ===" << endl;
+
+    // Генерация I (один раз за запуск)
+    static bool first = true;
+    if (first) {
+        srand(static_cast<unsigned>(time(nullptr)));
+        first = false;
+    }
+    int switchValue = rand() % 8;  // 0..7
+
+    if (verbose >= 1) {
+        cout << "[ℹ] I = " << switchValue << endl;
+    }
+
+    ErrorHandler::getInstance().clear();
+    Scanner scanner(file);
+    Parser parser(scanner);
+    auto ast = parser.parse();
+
+    if (ErrorHandler::getInstance().hasErrors()) {
+        ErrorHandler::getInstance().printErrors();
+        return;
+    }
+
+    if (verbose >= 1) {
+        cout << "✓ Синтаксический анализ успешен\n";
+    }
+
+    SemanticAnalyzer semantic;
+    semantic.analyze(ast);
+
+    if (ErrorHandler::getInstance().hasErrors()) {
+        ErrorHandler::getInstance().printErrors();
+        return;
+    }
+
+    if (verbose >= 1) {
+        cout << "✓ Семантический анализ успешен\n";
+    }
+
+    if (verbose >= 2) {
+        cout << "\n=== АБСТРАКТНОЕ СИНТАКСИЧЕСКОЕ ДЕРЕВО ===\n";
+        ast->print();
+    }
+
+    // Выполнение
+    if (verbose >= 1) {
+        cout << "\n=== РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ ===\n";
+    }
     semantic.execute(ast, switchValue);
 }
 
 int main(int argc, char* argv[]) {
     string filename;
-    int switchValue = 1;
+    int verbose = 0;      // -v 0 — по умолчанию
     bool interactive = false;
-    bool showAST = false;
-    bool showSymbols = false;
-    
-    // Парсинг аргументов командной строки
+    bool autoMode = false; // -a
+
+    // Парсинг аргументов
     for (int i = 1; i < argc; i++) {
         string arg = argv[i];
-        
+
         if (arg == "-h" || arg == "--help") {
             printHelp();
             return 0;
         } else if (arg == "-i" || arg == "--interactive") {
             interactive = true;
-        } else if (arg == "-v" || arg == "--value") {
+        } else if (arg == "-a" || arg == "--auto") {
+            autoMode = true;
+        } else if (arg == "-v" || arg == "--verbose") {
             if (i + 1 < argc) {
                 try {
-                    switchValue = stoi(argv[++i]);
+                    verbose = stoi(argv[++i]);
+                    if (verbose < 0 || verbose > 2) {
+                        cerr << "[Предупреждение] Уровень verbose должен быть 0, 1 или 2. Используется 0.\n";
+                        verbose = 0;
+                    }
                 } catch (...) {
-                    cerr << "Ошибка: некорректное значение для -v" << endl;
+                    cerr << "[Ошибка] Некорректное значение для -v: " << argv[i] << endl;
                     return 1;
                 }
             } else {
-                cerr << "Ошибка: отсутствует значение для -v" << endl;
+                cerr << "[Ошибка] Отсутствует значение после -v\n";
+                printHelp();
                 return 1;
             }
-        } else if (arg == "-a" || arg == "--ast") {
-            showAST = true;
-        } else if (arg == "-s" || arg == "--symbols") {
-            showSymbols = true;
         } else if (arg[0] != '-') {
             filename = arg;
         } else {
-            cerr << "Неизвестный аргумент: " << arg << endl;
+            cerr << "[Ошибка] Неизвестный аргумент: " << arg << endl;
             printHelp();
             return 1;
         }
     }
-    
+
+    // Запуск
     if (interactive) {
-        runInteractiveMode();
+        runInteractiveMode(verbose, autoMode);
     } else if (!filename.empty()) {
-        processFile(filename, switchValue, showAST, showSymbols);
+        processFile(filename, verbose, autoMode);
     } else {
-        cout << "Введите оператор switch (пустая строка для завершения):\n\n";
-        
-        string input;
-        string line;
-        
-        cout << "> ";
-        while (getline(cin, line) && !line.empty()) {
-            input += line + "\n";
-            cout << "> ";
-        }
-        
-        if (!input.empty()) {
-            ErrorHandler::getInstance().clear();
-            
-            Scanner scanner(input);
-            Parser parser(scanner);
-            
-            auto ast = parser.parse();
-            
-            if (ErrorHandler::getInstance().hasErrors()) {
-                ErrorHandler::getInstance().printErrors();
-            } else {
-                cout << "\n✓ Синтаксический анализ успешен\n";
-                
-                SemanticAnalyzer semantic;
-                semantic.analyze(ast);
-                
-                if (ErrorHandler::getInstance().hasErrors()) {
-                    ErrorHandler::getInstance().printErrors();
-                } else {
-                    cout << "✓ Семантический анализ успешен\n";
-                    
-                    cout << "\nВведите значение переменной I: ";
-                    if (cin >> switchValue) {
-                        semantic.execute(ast, switchValue);
-                    } else {
-                        cout << "Некорректное значение, используется значение по умолчанию: 1\n";
-                        semantic.execute(ast, 1);
-                    }
-                }
-            }
-        }
+        cout << "Укажите файл или используйте -i для интерактивного режима.\n";
+        printHelp();
+        return 1;
     }
-    
+
     return 0;
 }
