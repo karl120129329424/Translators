@@ -16,16 +16,16 @@ enum class TokenType {
     
     // Идентификаторы и константы
     IDENTIFIER,      // I
-    NUMBER,         // N (для номеров case)
-    STRING_LITERAL, // "Текст"
+    NUMBER,          // N (для номеров case)
+    STRING_LITERAL,  // "Текст"
     
     // Символы
-    LEFT_PAREN,     // (
-    RIGHT_PAREN,    // )
-    LEFT_BRACE,     // {
-    RIGHT_BRACE,    // }
-    COLON,          // :
-    SEMICOLON,      // ;
+    LEFT_PAREN,      // (
+    RIGHT_PAREN,     // )
+    LEFT_BRACE,      // {
+    RIGHT_BRACE,     // }
+    COLON,           // :
+    SEMICOLON,       // ;
     
     // Специальные
     END_OF_FILE,
@@ -69,7 +69,7 @@ private:
     
     Token makeToken(TokenType type) const;
     Token makeToken(TokenType type, const std::string& lexeme) const;
-    Token errorToken(const std::string& message) const;
+    // УДАЛЕНО: Token errorToken(const std::string& message) const;
     
     Token scanIdentifierOrKeyword();
     Token scanNumber();

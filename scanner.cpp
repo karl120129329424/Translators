@@ -1,4 +1,5 @@
 #include "scanner.h"
+#include "error_handler.h"
 #include <cctype>
 #include <unordered_map>
 
@@ -85,10 +86,6 @@ Token Scanner::makeToken(TokenType type, const string& lexeme) const {
     return Token(type, lexeme, line, column - lexeme.length());
 }
 
-Token Scanner::errorToken(const string& message) const {
-    return Token(TokenType::ERROR, message, line, column);
-}
-
 Token Scanner::scanIdentifierOrKeyword() {
     while (!isAtEnd() && (isalnum(peek()) || peek() == '_')) {
         advance();
@@ -106,7 +103,13 @@ Token Scanner::scanIdentifierOrKeyword() {
         return makeToken(TokenType::IDENTIFIER, lexeme);
     }
     
-    return errorToken("Недопустимый идентификатор: " + lexeme);
+    // ИСПРАВЛЕНО: обработка лексической ошибки
+    ErrorHandler::getInstance().addLexicalError(
+        "Недопустимый идентификатор: '" + lexeme + 
+        "'. Разрешены только ключевые слова и переменная 'I'",
+        line, column
+    );
+    return makeToken(TokenType::ERROR, lexeme);
 }
 
 Token Scanner::scanNumber() {
@@ -129,8 +132,13 @@ Token Scanner::scanString() {
         advance();
     }
     
+    // ИСПРАВЛЕНО: обработка лексической ошибки
     if (isAtEnd()) {
-        return errorToken("Незавершенная строковая константа");
+        ErrorHandler::getInstance().addLexicalError(
+            "Незавершённая строковая константа: отсутствует закрывающая кавычка",
+            line, column
+        );
+        return makeToken(TokenType::ERROR, "unclosed_string");
     }
     
     advance(); // Пропускаем закрывающую кавычку
@@ -172,7 +180,12 @@ Token Scanner::getNextToken() {
         return scanIdentifierOrKeyword();
     }
     
-    return errorToken(string("Неизвестный символ: ") + c);
+    // ИСПРАВЛЕНО: обработка лексической ошибки
+    ErrorHandler::getInstance().addLexicalError(
+        "Неизвестный символ: '" + string(1, c) + "'",
+        line, column
+    );
+    return makeToken(TokenType::ERROR, string(1, c));
 }
 
 Token Scanner::peekToken() {
